@@ -96,7 +96,7 @@ public class Article {
 		conf.set(XmlInputFormat.END_TAG_KEY, "</page>");
 
 		Job job = Job
-				.getInstance(conf, "WikiFirstTitleLetterDocumentLengthSum");
+				.getInstance(conf, "Article_zakaria");
 		job.setJarByClass(WikiFirstTitleLetterDocumentLengthSum.class);
 
 		// Input / Mapper

@@ -36,7 +36,7 @@ public class NumberHadoop {
 			String title = getTitle(articleXML);
 			String document = getDocument(articleXML);
 
-			if (title.length() > 0 && title.indexOf("hadoop")!=-1 || document.indexOf("hadoop")!=-1 ) {
+			if (title.length() > 0 && title.toLowerCase().indexOf("hadoop")!=-1 || document.toLowerCase().indexOf("hadoop")!=-1 ) {
 				context.write(new Text("Hadoop"), new IntWritable(1));
 			}
 
@@ -76,7 +76,7 @@ public class NumberHadoop {
 		conf.set(XmlInputFormat.END_TAG_KEY, "</page>");
 
 		Job job = Job
-				.getInstance(conf, "WikiFirstTitleLetterDocumentLengthSum");
+				.getInstance(conf, "NumberHadoop_zakaria");
 		job.setJarByClass(WikiFirstTitleLetterDocumentLengthSum.class);
 
 		// Input / Mapper
