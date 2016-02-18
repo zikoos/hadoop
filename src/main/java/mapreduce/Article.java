@@ -1,6 +1,6 @@
 package mapreduce;
 
-package mapreduce;
+
 
 import java.io.IOException;
 import java.util.regex.Matcher;
@@ -70,22 +70,22 @@ public class Article {
 				Context context) throws IOException, InterruptedException {
 			
 			
-			long totalLength = 0;
-			String keyResult;
+			long maxLength = 0;
+			String keyResult="";
 			
 			for (Text textelement : values) {
 				String[] resultat = textelement.toString().split("||");
-				IntWritable liste = new IntWritable(Integer.parseInt(resultat[1]));
-				if (liste.get() > totalLength){
+				int longueur = Integer.parseInt(resultat[1]);
+				if (longueur > maxLength){
 					
-					totalLength = liste.get();
+					maxLength = longueur;
 					keyResult = resultat[0];
 					
 				}
 				
 			}
 					
-			context.write(new Text(keyResult), new LongWritable(totalLength));
+			context.write(new Text(keyResult), new LongWritable(maxLength));
 		}
 	}
 
@@ -104,7 +104,7 @@ public class Article {
 		job.setInputFormatClass(XmlInputFormat.class);
 		job.setMapperClass(FirstTitleLetterMapper.class);
 		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(IntWritable.class);
+		job.setMapOutputValueClass(Text.class);
 
 		// Output / Reducer
 		FileOutputFormat.setOutputPath(job, new Path(args[1]));
