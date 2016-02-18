@@ -22,7 +22,7 @@ import org.apache.mahout.text.wikipedia.XmlInputFormat;
 public class Article {
 
 	public static class FirstTitleLetterMapper extends
-			Mapper<Object, Text, Text, IntWritable> {
+			Mapper<Object, Text, Text, Text> {
 
 	
 
@@ -41,7 +41,7 @@ public class Article {
 	
 
 			if (title.length() > 0) {
-				context.write(new Text("toto"  + "||" + title), new IntWritable(
+				context.write(new Text("toto"), new Text(title + "||" +   
 						document.length()));
 			
 			}
@@ -62,26 +62,30 @@ public class Article {
 	}
 
 	public static class DocumentLengthSumReducer extends
-			Reducer<Text, IntWritable, Text, LongWritable> {
+			Reducer<Text, Text, Text, LongWritable> {
 		long totalLengthmax = 0;
 		
 
-		public void reduce(Text key, Iterable<IntWritable> values,
+		public void reduce(Text key, Iterable<Text> values,
 				Context context) throws IOException, InterruptedException {
-			String[] keyadap = key.toString().split("||");
-			long totalLength = 0;
 			
-			for (IntWritable documentLength : values) {
-				//totalLength += documentLength.get();
-				if (documentLength.get() > totalLength){
+			
+			long totalLength = 0;
+			String keyResult;
+			
+			for (Text textelement : values) {
+				String[] resultat = textelement.toString().split("||");
+				IntWritable liste = new IntWritable(Integer.parseInt(resultat[1]));
+				if (liste.get() > totalLength){
 					
-					totalLength = documentLength.get();
+					totalLength = liste.get();
+					keyResult = resultat[0];
 					
 				}
 				
 			}
-		
-			context.write(new Text(keyadap[1].toString()), new LongWritable(totalLength));
+					
+			context.write(new Text(keyResult), new LongWritable(totalLength));
 		}
 	}
 
