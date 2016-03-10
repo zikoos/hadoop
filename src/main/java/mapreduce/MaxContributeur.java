@@ -79,15 +79,23 @@ import com.sun.tools.javac.util.List;
 
 		public static class DocumentLengthSumReducer extends
 				Reducer<Text, IntWritable, Text, LongWritable> {
+			long maxContributor = 0;
+			Text contributor;
 					
 			public void reduce(Text key, Iterable<IntWritable> values,
 					Context context) throws IOException, InterruptedException {
-
+				
+				
 				long sum = 0;
 				for (IntWritable val : values) {
 					sum += val.get();
 				}
-				context.write(key, new LongWritable(sum));
+				 if(sum > maxContributor){
+					 maxContributor=sum;
+					 contributor.set(key);				 
+				 }
+			
+				context.write(contributor, new LongWritable(maxContributor));
 			}
 		}	
 
