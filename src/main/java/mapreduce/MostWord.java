@@ -1,115 +1,100 @@
 
 package mapreduce;
-
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.StringTokenizer;
+import java.util.TreeMap;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
-import org.apache.mahout.text.wikipedia.XmlInputFormat;
+
+import com.sun.tools.internal.xjc.util.ForkContentHandler;
+import com.sun.tools.javac.code.Type.ForAll;
 
 public class MostWord {
 
-	public static class FirstTitleLetterMapper extends
-			Mapper<Object, Text, Text, IntWritable> {
+  // this is the name of the jar you compile, so hadoop has its fucntion hooks
+  private final static String JAR_NAME = "wc.jar";   
 
-		private static final String START_DOC = "<text xml:space=\"preserve\">";
-		private static final String END_DOC = "</text>";
-		private static final Pattern TITLE = Pattern
-				.compile("<title>(.*)<\\/title>");
-		private static final Pattern WORD = Pattern
-				.compile("*/w");
+  public static class TokenizerMapper
+       extends Mapper<Object, Text, Text, IntWritable>{
 
-		public void map(Object key, Text value, Context context)
-				throws IOException, InterruptedException {
+    // this is the name of the jar you compile, so hadoop has its fucntion hooks!
+    private final static String JAR_NAME = "wc.jar";
+    private final static IntWritable one = new IntWritable(1);
+    private Text word = new Text();
 
-			String articleXML = value.toString();
+    public void map(Object key, Text value, Context context
+                    ) throws IOException, InterruptedException {
+      StringTokenizer itr = new StringTokenizer(value.toString());
+      while (itr.hasMoreTokens()) {
+        word.set(itr.nextToken());
 
-			String title = getTitle(articleXML);
-			String document = getDocument(articleXML);
-			String word=getWord(articleXML);
+        context.write(word, one);
+      }
+    }
+  }
 
-			if (title.length() > 0) {
-				context.write(new Text(title.substring(0, 1)), new IntWritable(
-						document.length()));
-			}
+  public static class IntSumReducer
+       extends Reducer<Text,IntWritable,Text,IntWritable> {
+    private IntWritable result = new IntWritable();
+    //liste des 100 mots qui ont le max sum
+    //ArrayList<Text> mylist = new ArrayList<Text>(100);
+    TreeMap<Integer,Text> mylist= new TreeMap<>();
+    
+    int indicemin=0;
 
-		}
-
-		private static String getDocument(String xml) {
-			int start = xml.indexOf(START_DOC) + START_DOC.length();
-			int end = xml.indexOf(END_DOC, start);
-			return start < end ? xml.substring(start, end) : "";
-		}
-
-		private static String getTitle(CharSequence xml) {
-			Matcher m = TITLE.matcher(xml);
-			return m.find() ? m.group(1) : "";
-		}
-		
-		private static ArrayList<String> getWord(CharSequence xml) {
-			Matcher m = WORD.matcher(xml);
-			ArrayList<String> listWord = new ArrayList<String>();
-			while(m.find()){
-				
-				listWord.add(m.group(1));
-			}
-			return listWord;
-		}
-
-
+    public void reduce(Text key, Iterable<IntWritable> values,
+                       Context context
+                       ) throws IOException, InterruptedException {
+      int sum = 0;
+      for (IntWritable val : values) {
+        sum += val.get();
+      }
+      result.set(sum);
+      context.write(key, result);
+      Text conca =new Text(key+"|||"+result);
+      
+      if(mylist.size()>100){
+    	  if(mylist.lastKey()<sum){
+    		  mylist.remove(mylist.size()-1);
+    	      mylist.put(sum, key);
+    	  }
+      }
+      else{
+    	  mylist.put(sum, key);
+      }
+    	  		
 	}
+    
+    for(Entry<Integer,Text> entry : treeMap.desc){
+    	context.write();    	
+    }
+    
+    
+    }
 
-	public static class DocumentLengthSumReducer extends
-			Reducer<Text, IntWritable, Text, LongWritable> {
-
-		public void reduce(Text key, Iterable<IntWritable> values,
-				Context context) throws IOException, InterruptedException {
-
-			long totalLength = 0;
-			for (IntWritable documentLength : values) {
-				totalLength += documentLength.get();
-			}
-			context.write(key, new LongWritable(totalLength));
-		}
-	}
-
-	public static void main(String[] args) throws Exception {
-
-		Configuration conf = new Configuration();
-		conf.set(XmlInputFormat.START_TAG_KEY, "<page>");
-		conf.set(XmlInputFormat.END_TAG_KEY, "</page>");
-
-		Job job = Job
-				.getInstance(conf, "MostWord");
-		job.setJarByClass(WikiFirstTitleLetterDocumentLengthSum.class);
-
-		// Input / Mapper
-		FileInputFormat.addInputPath(job, new Path(args[0]));
-		job.setInputFormatClass(XmlInputFormat.class);
-		job.setMapperClass(FirstTitleLetterMapper.class);
-		job.setMapOutputKeyClass(Text.class);
-		job.setMapOutputValueClass(IntWritable.class);
-
-		// Output / Reducer
-		FileOutputFormat.setOutputPath(job, new Path(args[1]));
-		job.setOutputFormatClass(TextOutputFormat.class);
-		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(LongWritable.class);
-		job.setReducerClass(DocumentLengthSumReducer.class);
-		job.setNumReduceTasks(12);
-
-		System.exit(job.waitForCompletion(true) ? 0 : 1);
-	}
+  public static void main(String[] args) throws Exception {
+    Configuration conf = new Configuration();
+    Job job = Job.getInstance(conf, "word count");
+    job.setJar( JAR_NAME );
+    job.setJarByClass(MostWord.class);
+    job.setMapperClass(TokenizerMapper.class);
+    job.setCombinerClass(IntSumReducer.class);
+    job.setReducerClass(IntSumReducer.class);
+    job.setOutputKeyClass(Text.class);
+    job.setOutputValueClass(IntWritable.class);
+    FileInputFormat.addInputPath(job, new Path(args[0]));
+    FileOutputFormat.setOutputPath(job, new Path(args[1]));
+    System.exit(job.waitForCompletion(true) ? 0 : 1);
+  }
 }
