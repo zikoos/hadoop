@@ -31,7 +31,7 @@
 			private static final Pattern TITLE = Pattern
 					.compile("<title>(.*)<\\/title>");
 			private static final Pattern Contributeur = Pattern
-					.compile("<title>(.*)<\\/title>");
+					.compile("<contributor>(.*)<\\/contributor>");
 
 			public void map(Object key, Text value, Context context)
 					throws IOException, InterruptedException {

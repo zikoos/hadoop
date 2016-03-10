@@ -41,7 +41,7 @@ public class Article {
 	
 
 			if (title.length() > 0) {
-				context.write(new Text("toto"), new Text(title + "||" +   
+				context.write(new Text("toto"), new Text(title + "\\|\\|" +   
 						document.length()));
 			
 			}
@@ -72,16 +72,20 @@ public class Article {
 			
 			long maxLength = 0;
 			String keyResult="";
+			String[] resultat =new String[2];
 			
 			for (Text textelement : values) {
-				String[] resultat = textelement.toString().split("||");
-				int longueur = Integer.parseInt(resultat[1]);
-				if (longueur > maxLength){
-					
-					maxLength = longueur;
-					keyResult = resultat[0];
-					
+				resultat = textelement.toString().split("\\|\\|");
+				if(resultat.length>1){
+					int longueur = Integer.parseInt(resultat[1]);
+					if (longueur > maxLength){
+						
+						maxLength = longueur;
+						keyResult = resultat[0];
+						
+					}
 				}
+				
 				
 			}
 					
@@ -96,7 +100,7 @@ public class Article {
 		conf.set(XmlInputFormat.END_TAG_KEY, "</page>");
 
 		Job job = Job
-				.getInstance(conf, "Article_zakaria");
+				.getInstance(conf, "Article_Valentin");
 		job.setJarByClass(WikiFirstTitleLetterDocumentLengthSum.class);
 
 		// Input / Mapper
