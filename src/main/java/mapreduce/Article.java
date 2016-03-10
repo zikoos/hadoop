@@ -41,7 +41,7 @@ public class Article {
 	
 
 			if (title.length() > 0) {
-				context.write(new Text("toto"), new Text(title + "\\|\\|" +   
+				context.write(new Text("toto"), new Text(title + "||" +   
 						document.length()));
 			
 			}
